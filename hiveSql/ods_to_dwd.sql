@@ -138,7 +138,7 @@ select
     get_json_object(line, "$.get_time_day") as `get_time_day`,
     cast(get_json_object(line, "$.get_time_hour") as int) as `get_time_hour`,
     get_json_object(line, "$.token_symbol") as `token_symbol`,
-    cast(get_json_object(line, "$.coin2rmb") as float) as `coin2rmb`,
-    cast(get_json_object(line, "$.coin2usd") as float) as `coin2usd`,
+    cast(replace(get_json_object(line, "$.coin2rmb"), ",", "") as float) as `coin2rmb`,
+    cast(replace(get_json_object(line, "$.coin2usd"), ",", "") as float) as `coin2usd`,
     "2022-03-10" dt
 FROM eth.ods_coin_price;
