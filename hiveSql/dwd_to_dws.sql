@@ -1,12 +1,12 @@
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert into eth.dws_erc20_stable_coins partition (dt)
 select address contract_address, decimals, name, symbol, "2022-03-12" dt from dwd_eth_log_erctoken 
-where symbol = "alUSD"  or symbol = "BUSD" or symbol = "DAI" or symbol = "EURS"
-      or symbol = "FEI"  or symbol = "FRAX" or symbol = "GUSD" or symbol = "HUSD"
-      or symbol = "LUSD"  or symbol = "MIM" or symbol = "MUSD" or symbol = "PAX"
-      or symbol = "sUSD"  or symbol = "TUSD" or symbol = "USDC" or symbol = "USDN"
-      or symbol = "USDP"  or symbol = "USDT" or symbol = "UST"
-group by address, symbol, decimals, name;
+where name = "Alchemix USD"  or name = "Binance USD" or name = "Dai" or name = "STASIS EURS"
+      or name = "Fei USD"  or name = "Frax" or name = "Gemini Dollar" or name = "HUSD"
+      or name = "Liquity USD"  or name = "Magic Internet Money" or name = "mStable USD" or name = "Paxos Standard"
+      or name = "Synthetix sUSD"  or name = "TrueUSD" or name = "USD Coin" or name = "Neutrino USD"
+      or name = "Pax Dollar"  or name = "Tether" or name = "Wrapped UST Token"
+group by address, name, decimals, symbol;
 
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert into eth.dws_erc20_token_balances partition (dt)
