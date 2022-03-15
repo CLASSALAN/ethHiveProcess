@@ -31,3 +31,42 @@ select
   "2022-03-12" dt
 from eth.dwd_eth_log_erctoken where decimals is not null and to_balance is not null and to_balance != "<nil>" and to_balance != "" and dt = "2022-03-12" and erc_type = "ERC20"
 group by to_balance, `timestamp`, address, symbol, `to`, decimals, dt;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+insert into eth.dws_erc20_token_balances_latest partition (dt)
+select
+  tbl.amount_raw,
+  tbl.`timestamp`,
+  tbl.token_address,
+  tbl.wallet_address,
+  "2022-03-12" dt
+from (select
+  tb.amount_raw,
+  tb.`timestamp`,
+  tb.token_address,
+  tb.wallet_address
+from dws_erc20_token_balances tb join
+(select
+  max(`timestamp`) max_ts,
+  token_address,
+  wallet_address
+from dws_erc20_token_balances group by token_address, wallet_address) tmp
+on tb.`timestamp` = tmp.max_ts and tb.token_address = tmp.token_address and tb.wallet_address = tmp.wallet_address) tbl
+group by
+  amount_raw,
+  `timestamp`,
+  token_address,
+  wallet_address;
+
+set hive.exec.dynamic.partition.mode=nonstrict;
+insert into eth.dws_erc20_tokens partition (dt)
+select
+  address contract_address,
+  decimals,
+  symbol,
+  "2022-03-12" dt
+from dwd_eth_log_erctoken where erc_type = "ERC20" and symbol != ""
+group by
+  address,
+  decimals,
+  symbol;
