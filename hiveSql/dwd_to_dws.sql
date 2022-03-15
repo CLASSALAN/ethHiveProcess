@@ -11,25 +11,23 @@ group by address, name, decimals, symbol;
 set hive.exec.dynamic.partition.mode=nonstrict;
 insert into eth.dws_erc20_token_balances partition (dt)
 select
-  if(from_balance = "<nil>", "0", eth.div_bignum(from_balance, power(10, decimals)) amount,
+  eth.div_bignum(from_balance, power(10, decimals)) amount,
   from_balance amount_raw,
   `timestamp`,
   address token_address,
   symbol token_symbol,
   `from` wallet_address,
   "2022-03-12" dt
-from eth.dwd_eth_log_erctoken where `from` != "0x0000000000000000000000000000000000000000" 
-                               and symbol is not null and dt = "2022-03-12"and erc_type = "ERC20"
-group by from_balance, `timestamp`, address, symbol, `from`, dt
+from eth.dwd_eth_log_erctoken where decimals is not null and from_balance is not null and from_balance != "<nil>" and from_balance != "" and dt = "2022-03-12"and erc_type = "ERC20"
+group by from_balance, `timestamp`, address, symbol, `from`, decimals, dt
 union all
 select
-  if(to_balance = "<nil>", "0", eth.div_bignum(to_balance, power(10, decimals))) amount,
+  eth.div_bignum(to_balance, power(10, decimals)) amount,
   to_balance amount_raw,
   `timestamp`,
   address token_address,
   symbol token_symbol,
   `to` wallet_address,
   "2022-03-12" dt
-from eth.dwd_eth_log_erctoken where `to` != "0x0000000000000000000000000000000000000000" 
-                               and symbol is not null and dt = "2022-03-12" and erc_type = "ERC20"
+from eth.dwd_eth_log_erctoken where decimals is not null and to_balance is not null and to_balance != "<nil>" and to_balance != "" and dt = "2022-03-12" and erc_type = "ERC20"
 group by to_balance, `timestamp`, address, symbol, `to`, decimals, dt;
