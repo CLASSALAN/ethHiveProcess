@@ -18,7 +18,7 @@ select
   symbol token_symbol,
   `from` wallet_address,
   "2022-03-12" dt
-from eth.dwd_eth_log_erctoken where decimals is not null and from_balance is not null and from_balance != "<nil>" and from_balance != "" and dt = "2022-03-12"and erc_type = "ERC20"
+from eth.dwd_eth_log_erctoken where decimals is not null and from_balance is not null and from_balance != "<nil>" and from_balance != "" and dt = "2022-03-12"and erc_type = "ERC20" and eth.parse_erc20_transfer(topics, data) is not null
 group by from_balance, `timestamp`, address, symbol, `from`, decimals, dt
 union all
 select
@@ -29,7 +29,7 @@ select
   symbol token_symbol,
   `to` wallet_address,
   "2022-03-12" dt
-from eth.dwd_eth_log_erctoken where decimals is not null and to_balance is not null and to_balance != "<nil>" and to_balance != "" and dt = "2022-03-12" and erc_type = "ERC20"
+from eth.dwd_eth_log_erctoken where decimals is not null and to_balance is not null and to_balance != "<nil>" and to_balance != "" and dt = "2022-03-12" and erc_type = "ERC20" and eth.parse_erc20_transfer(topics, data) is not null
 group by to_balance, `timestamp`, address, symbol, `to`, decimals, dt;
 
 set hive.exec.dynamic.partition.mode=nonstrict;
@@ -65,7 +65,7 @@ select
   decimals,
   symbol,
   "2022-03-12" dt
-from dwd_eth_log_erctoken where erc_type = "ERC20" and symbol != ""
+from dwd_eth_log_erctoken where erc_type = "ERC20" and symbol != "" and eth.parse_erc20_transfer(topics, data) is not null
 group by
   address,
   decimals,
