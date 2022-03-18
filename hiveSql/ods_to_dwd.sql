@@ -45,7 +45,7 @@ from
 (select 
     get_json_object(line, "$.blockHeiget") as `blockHeiget`,
     get_json_object(line, "$.timeStamp") as `timeStamp`,
-    nvl(get_json_object(line, "$.Transactions"),"[{}]")  as transaction,
+    if(get_json_object(line, "$.Transactions") = "[]","[{}]",get_json_object(line, "$.Transactions"))  as transaction,
     get_json_object(line, "$.parentHash") as parentHash,
     get_json_object(line, "$.sha3Uncles") as sha3Uncles,
     get_json_object(line, "$.stateRoot") as stateRoot,
@@ -103,7 +103,7 @@ select
     GET_JSON_OBJECT(logs, "$.logIndex") logIndex,
     GET_JSON_OBJECT(logs, "$.timeStamp") `timeStamp`,
     GET_JSON_OBJECT(logs, "$.removed") `removed`,
-    nvl(GET_JSON_OBJECT(logs, "$.erctokens"), "[{}]") erctokens
+    if(GET_JSON_OBJECT(logs, "$.erctokens") is null or GET_JSON_OBJECT(logs, "$.erctokens") = "null", "[{}]", GET_JSON_OBJECT(logs, "$.erctokens")) erctokens
 from(
 select default.explode_json(line) logs
 from eth.ods_erc_token where dt = "2022-03-10") tmp1) tmp2 lateral view default.explode_json(erctokens) explode_table as ercs;
