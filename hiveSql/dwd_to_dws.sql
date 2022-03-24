@@ -92,7 +92,7 @@ select
 from eth.dwd_eth_log_erctoken where symbol = "WETH";
 
 select ds, count(DISTINCT(txn_hash))
-from (select substring(FROM_UNIXTIME(cast(`timestamp` as bigint)), 1, 10) ds, txn_hash 
+from (select date_format(from_utc_timestamp(cast(`timestamp` as bigint)*1000,"PST"),'yyyy-MM-dd') ds, txn_hash 
 from dwd_eth_block_transaction where dt = "0000-00-03" 
 and txn_to ='0x1c7e83f8c581a967940dbfa7984744646ae46b29' and txn_status = 1)tmp
 group by ds;
