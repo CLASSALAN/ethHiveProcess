@@ -120,6 +120,56 @@ FROM
    GROUP BY `date`
    ORDER BY `date`) AS c;
 
+WITH transfers AS (
+    SELECT `day`,
+    address,
+    token_address,
+    sum(amount) AS amount
+    FROM
+    (
+        SELECT SUBSTR(evt_block_time, 1, 10) AS `day`,
+            `to` AS address,
+            tr.contract_address AS token_address, value AS amount
+        FROM eth.dws_erc20_evt_transfer tr
+        WHERE contract_address = '0x1c7e83f8c581a967940dbfa7984744646ae46b29'
+        UNION ALL
+        SELECT SUBSTR(evt_block_time, 1, 10) AS `day`,
+            `from` AS address,
+            tr.contract_address AS token_address, CONCAT('-', value) AS amount
+        FROM eth.dws_erc20_evt_transfer tr
+        WHERE contract_address = '0x1c7e83f8c581a967940dbfa7984744646ae46b29'
+    ) t
+    GROUP BY `day`, address, token_address
+),
+balances_with_gap_days AS (
+    SELECT t.`day`,
+        address,
+        SUM(amount) OVER (PARTITION BY address ORDER BY t.`day`) AS balance,
+        lead(`day`, 1, current_date()) OVER (PARTITION BY address ORDER BY t.`day`) AS next_day
+        FROM transfers t
+),
+days AS (
+    SELECT new_day as `day` from (select date_add('2022-01-01T00:00:00',idx) as new_day from dwd_coin_price
+lateral view posexplode( split( space( datediff( current_date, to_date('2022-01-01T00:00:00') ) ), ' ')  ) tt as idx, v)tmp
+group by `new_day`
+),
+balance_all_days AS (
+    SELECT d.`day`,
+        address,
+        SUM(balance/10^0) AS balance
+    FROM balances_with_gap_days b
+    INNER JOIN days d where b.`day` <= d.`day`
+    and d.`day` < b.next_day
+    GROUP BY d.`day`, address
+    ORDER BY d.`day`, address
+)
+SELECT b.`day` AS `Date`,
+    COUNT(address) AS `Holders`,
+    COUNT(address) - lag(COUNT(address)) OVER (ORDER BY b.`day`) AS `CHANGE`
+FROM balance_all_days b
+WHERE balance > 0
+GROUP BY b.`day`
+ORDER BY b.`day`;
 ------------------------------------------ Dune Test ----------------------------------------------
 WITH transfers AS ( SELECT
    evt_tx_hash AS tx_hash,
