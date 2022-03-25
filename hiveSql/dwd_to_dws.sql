@@ -90,3 +90,37 @@ select
   `to` wallet_address,
   "2022-03-12" dt
 from eth.dwd_eth_log_erctoken where symbol = "WETH";
+
+select ds, count(DISTINCT(txn_hash))
+from (select date_format(from_utc_timestamp(cast(`timestamp` as bigint)*1000,"PST"),'yyyy-MM-dd') ds, txn_hash 
+from dwd_eth_block_transaction where dt = "0000-00-03" 
+and txn_to ='0x1c7e83f8c581a967940dbfa7984744646ae46b29' and txn_status = 1)tmp
+group by ds;
+
+------------------------------------------ Dune Test ----------------------------------------------
+WITH transfers AS ( SELECT
+   evt_tx_hash AS tx_hash,
+     tr."from" AS address,
+     -tr.value AS amount,contract_address
+
+FROM erc20."ERC20_evt_Transfer" tr
+WHERE contract_address =  '\x1c7e83f8c581a967940dbfa7984744646ae46b29'
+
+UNION ALL
+
+SELECT evt_tx_hash AS tx_hash,
+           tr."to" AS address,
+          tr.value AS amount,contract_address
+
+FROM erc20."ERC20_evt_Transfer" tr
+where contract_address = '\x1c7e83f8c581a967940dbfa7984744646ae46b29'),
+transferAmounts AS (
+                    SELECT address,
+                    sum(amount)/1e18 as poolholdings FROM transfers
+
+                    GROUP BY 1
+                    ORDER BY 2 DESC)
+
+SELECT COUNT(DISTINCT(address)) as holders
+FROM transferAmounts
+WHERE poolholdings > 0;
