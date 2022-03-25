@@ -97,6 +97,29 @@ from dwd_eth_block_transaction where dt = "0000-00-03"
 and txn_to ='0x1c7e83f8c581a967940dbfa7984744646ae46b29' and txn_status = 1)tmp
 group by ds;
 
+SELECT `date`, sum(users) OVER (
+                              ORDER BY `date` ASC ROWS BETWEEN unbounded preceding AND CURRENT ROW) AS total_users
+FROM
+  (SELECT `date`, count(`USER`) AS users
+   FROM
+     (SELECT min(`date`) AS `date`,
+             account AS `USER`
+      FROM
+        (select min(`date`) `date`, account from (SELECT date_format(from_utc_timestamp(cast(`timestamp` as bigint)*1000,"PST"),'yyyy-MM-dd') AS `date`,
+                t.`from` AS account
+         FROM dwd_eth_log_erctoken t
+         WHERE t.address = '0x1c7e83f8c581a967940dbfa7984744646ae46b29')tmp1
+         GROUP BY account
+         UNION
+         select min(`date`) `date`, account from (SELECT date_format(from_utc_timestamp(cast(`timestamp` as bigint)*1000,"PST"),'yyyy-MM-dd') AS `date`,
+                      t.`to` AS account
+         FROM dwd_eth_log_erctoken t
+         WHERE t.address = '0x1c7e83f8c581a967940dbfa7984744646ae46b29')tmp2
+         GROUP BY account) AS a
+      GROUP BY account) AS b
+   GROUP BY `date`
+   ORDER BY `date`) AS c;
+
 ------------------------------------------ Dune Test ----------------------------------------------
 WITH transfers AS ( SELECT
    evt_tx_hash AS tx_hash,
