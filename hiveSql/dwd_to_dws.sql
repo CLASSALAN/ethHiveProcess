@@ -170,6 +170,27 @@ FROM balance_all_days b
 WHERE balance > 0
 GROUP BY b.`day`
 ORDER BY b.`day`;
+
+WITH transfers AS ( SELECT
+   evt_tx_hash AS tx_hash,
+     tr.`from` AS address,
+     CONCAT("-",tr.value) AS amount,contract_address
+FROM eth.dws_erc20_evt_transfer tr
+WHERE contract_address =  '0x1c7e83f8c581a967940dbfa7984744646ae46b29' and evt_block_number <= 14322999 and value != ""
+UNION ALL
+SELECT evt_tx_hash AS tx_hash,
+           tr.`to` AS address,
+          tr.value AS amount,contract_address
+FROM eth.dws_erc20_evt_transfer tr
+where contract_address = '0x1c7e83f8c581a967940dbfa7984744646ae46b29' and evt_block_number <= 14322999 and value != ""),
+transferAmounts AS
+(SELECT address,
+    sum(amount) as poolholdings FROM transfers
+    GROUP BY address
+    ORDER BY poolholdings DESC)
+SELECT COUNT(DISTINCT(address)) as holders
+FROM transferAmounts
+WHERE poolholdings > 0;
 ------------------------------------------ Dune Test ----------------------------------------------
 WITH transfers AS ( SELECT
    evt_tx_hash AS tx_hash,
