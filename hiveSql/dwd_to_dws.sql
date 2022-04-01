@@ -191,6 +191,27 @@ transferAmounts AS
 SELECT COUNT(DISTINCT(address)) as holders
 FROM transferAmounts
 WHERE poolholdings > 0;
+
+WITH transfers AS ( SELECT
+      evt_tx_hash AS tx_hash,
+     `from` AS address,
+     CONCAT('-', value) AS amount,contract_address
+FROM eth.dws_erc20_evt_transfer
+WHERE dt = '0000-00-06' and contract_address = '0x1c7e83f8c581a967940dbfa7984744646ae46b29' and evt_block_number <= 14275599
+UNION ALL
+SELECT evt_tx_hash AS tx_hash,
+           `to` AS address,
+          value AS amount,contract_address
+FROM eth.dws_erc20_evt_transfer
+where dt = '0000-00-06' and contract_address = '0x1c7e83f8c581a967940dbfa7984744646ae46b29' and  evt_block_number <= 14275599) ,
+transferAmounts AS (
+                    SELECT address,
+                           eth.sum_bignum(amount)/1e18 as poolholdings
+                    FROM transfers
+                    GROUP BY address)
+SELECT COUNT(DISTINCT(address)) as holders
+FROM transferAmounts
+WHERE poolholdings > 100000000;
 ------------------------------------------ Dune Test ----------------------------------------------
 WITH transfers AS ( SELECT
    evt_tx_hash AS tx_hash,
