@@ -169,3 +169,58 @@ where num_a > 0)
 select m_wallets, mw.num
 from azuki_wallets aw join muri_wallets mw
 on aw.a_wallets = mw.m_wallets;
+
+---------------- nft holders profit analyze ----------------
+with et as (
+select
+    "from",
+    "to",
+    "tokenId",
+    "contract_address",
+    "evt_tx_hash",
+    "evt_index",
+    "evt_block_time",
+    "evt_block_number"
+from erc721."ERC721_evt_Transfer"
+),
+with nt as (
+select
+    "block_time",
+    "nft_project_name",
+    "nft_token_id",
+    "erc_standard",
+    "platform",
+    "platform_version",
+    "trade_type",
+    "number_of_items",
+    "category",
+    "evt_type",
+    "usd_amount",
+    "seller",
+    "buyer",
+    "original_amount",
+    "original_amount_raw",
+    "original_currency",
+    "original_currency_contract",
+    "currency_contract",
+    "nft_contract_address",
+    "exchange_contract_address",
+    "tx_hash",
+    "block_number",
+    "nft_token_ids_array",
+    "senders_array",
+    "recipients_array",
+    "erc_types_array",
+    "nft_contract_addresses_array",
+    "erc_values_array",
+    "tx_from",
+    "tx_to",
+    "trace_address",
+    "evt_index",
+    "trade_id"
+from nft.trades
+where erc_standard like '%721'
+)
+select
+    *
+from et join nt on et."evt_tx_hash" = nt."tx_hash";
