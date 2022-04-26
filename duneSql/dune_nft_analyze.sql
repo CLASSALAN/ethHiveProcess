@@ -224,3 +224,51 @@ where erc_standard like '%721'
 select
     *
 from et join nt on et."evt_tx_hash" = nt."tx_hash";
+
+-------- trades that sell within 24 hours after buying --------
+with sell_table_a as(
+select
+    block_time,
+    platform,
+    nft_contract_address,
+    nft_project_name,
+    nft_token_id,
+    seller,
+    eth_amount,
+    usd_amount,
+    coalesce(original_royalty_fees, 0),
+    coalesce(usd_royalty_fees, 0),
+    coalesce(original_platform_fees, 0),
+    coalesce(usd_platform_fees, 0),
+    eth_amount - coalesce(original_royalty_fees, 0) - coalesce(original_platform_fees, 0) as eth_income,
+    usd_amount - coalesce(usd_royalty_fees, 0) - coalesce(usd_platform_fees, 0) as usd_income
+from nft."trades_v2_beta" where nft_contract_address = '\xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D' and platform = 'OpenSea'
+    and eth_amount is not null and usd_amount is not null and (original_currency = 'ETH' OR original_currency = 'WETH')
+),
+buy_table_a as (
+select
+    block_time,
+    nft_token_id,
+    buyer,
+    eth_amount,
+    usd_amount
+from nft."trades_v2_beta" where nft_contract_address = '\xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D' and platform = 'OpenSea'
+    and eth_amount is not null and usd_amount is not null and (original_currency = 'ETH' OR original_currency = 'WETH')
+group by block_time, nft_token_id, buyer, eth_amount, usd_amount
+)
+select
+    st.nft_project_name,
+    st.seller as address,
+    st.nft_token_id,
+    bt.block_time as "Buy Time",
+    st.block_time as "Sell Time",
+    EXTRACT(EPOCH FROM (st.block_time - bt.block_time))/60/60 as "Time Difference", --时间差距（小时）
+    bt.eth_amount as buy_price,
+    st.eth_amount as sell_price,
+    st.eth_income - bt.eth_amount as eth_profit,
+    st.usd_income - bt.usd_amount as usd_profit
+from sell_table_a st join buy_table_a bt
+on st.seller = bt.buyer and st.nft_token_id = bt.nft_token_id
+WHERE EXTRACT(EPOCH FROM (st.block_time - bt.block_time))/60/60 > 0
+    and EXTRACT(EPOCH FROM (st.block_time - bt.block_time))/60/60 < 24;
+
